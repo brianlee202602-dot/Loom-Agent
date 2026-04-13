@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loom Agent</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --panel: rgba(255, 250, 240, 0.88);
+      --panel-strong: #fffdf8;
+      --ink: #1d1f21;
+      --muted: #66707a;
+      --line: rgba(38, 52, 61, 0.12);
+      --accent: #1f6f78;
+      --accent-soft: rgba(31, 111, 120, 0.12);
+      --ok: #237804;
+      --warn: #ad4e00;
+      --shadow: 0 18px 40px rgba(55, 48, 38, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Bahnschrift", "Microsoft YaHei UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(31, 111, 120, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(191, 132, 54, 0.18), transparent 24%),
+        linear-gradient(160deg, #f8f4ea 0%, #ece5d6 100%);
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 40px;
+    }
+
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+      align-items: flex-end;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 0.96;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      max-width: 620px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 999px;
+      padding: 8px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      backdrop-filter: blur(10px);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .panel-body {
+      padding: 18px 20px 20px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    textarea,
+    pre {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--ink);
+      background: var(--panel-strong);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    pre {
+      margin: 0;
+      min-height: 96px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(31, 111, 120, 0.16);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .secondary {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .transcript {
+      display: grid;
+      gap: 12px;
+      max-height: 480px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .bubble {
+      border-radius: 18px;
+      padding: 14px 16px;
+      line-height: 1.7;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    .bubble.user {
+      background: rgba(31, 111, 120, 0.1);
+    }
+
+    .bubble.assistant {
+      background: rgba(191, 132, 54, 0.12);
+    }
+
+    .bubble small {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+    }
+
+    .status-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      font-size: 20px;
+    }
+
+    .response-meta {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(31, 111, 120, 0.09);
+      color: var(--accent);
+      margin-right: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .ok {
+      color: var(--ok);
+    }
+
+    .warn {
+      color: var(--warn);
+    }
+
+    .footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 920px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div>
+        <div class="badge">FastAPI + LangGraph + LangChain</div>
+        <h1>Loom Agent</h1>
+        <p>一个用于联调 `GET /healthz` 与 `POST /api/v1/agent/respond` 的最小前端。页面会自动维护聊天历史，并展示命中的 skill、耗时和工具调用摘要。</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>对话调试</h2>
+          <div class="actions">
+            <button class="secondary" id="clearChatButton" type="button">新建会话</button>
+            <button class="primary" id="sendButton" type="button">发送请求</button>
+          </div>
+        </div>
+        <div class="panel-body stack">
+          <div class="field">
+            <label for="chatIdInput">chat_id</label>
+            <input id="chatIdInput" type="text">
+          </div>
+
+          <div class="field">
+            <label for="userInput">user_input</label>
+            <textarea id="userInput" placeholder="例如：让机器人去厨房，或者帮我查看幻曜萃饮仪的清洁步骤。"></textarea>
+          </div>
+
+          <div class="field">
+            <label>聊天内容</label>
+            <div class="transcript" id="transcript"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>服务状态</h2>
+            <button class="secondary" id="healthButton" type="button">刷新状态</button>
+          </div>
+          <div class="panel-body stack">
+            <div class="status-row">
+              <div class="metric">
+                <span>服务名</span>
+                <strong id="serviceName">Loom Agent</strong>
+              </div>
+              <div class="metric">
+                <span>状态</span>
+                <strong id="healthStatus" class="warn">待检查</strong>
+              </div>
+              <div class="metric">
+                <span>技能数量</span>
+                <strong id="skillCount">-</strong>
+              </div>
+              <div class="metric">
+                <span>LLM 可用</span>
+                <strong id="llmStatus">-</strong>
+              </div>
+            </div>
+            <pre id="healthPayload">{}</pre>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>最近响应</h2>
+          </div>
+          <div class="panel-body stack">
+            <div class="response-meta" id="responseMeta">
+              <div>mode: -</div>
+              <div>matched_skill: -</div>
+              <div>duration_ms: -</div>
+            </div>
+            <div class="field">
+              <label>工具调用摘要</label>
+              <div id="toolTraceList"></div>
+            </div>
+            <div class="field">
+              <label>请求体</label>
+              <pre id="requestPayload">{}</pre>
+            </div>
+            <div class="field">
+              <label>响应体</label>
+              <pre id="responsePayload">{}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">前端页面位于项目根目录，默认由 FastAPI 根路径 `/` 返回。</div>
+  </div>
+
+  <script>
+    const chatIdInput = document.getElementById("chatIdInput");
+    const userInput = document.getElementById("userInput");
+    const transcript = document.getElementById("transcript");
+    const sendButton = document.getElementById("sendButton");
+    const clearChatButton = document.getElementById("clearChatButton");
+    const healthButton = document.getElementById("healthButton");
+    const serviceName = document.getElementById("serviceName");
+    const healthStatus = document.getElementById("healthStatus");
+    const skillCount = document.getElementById("skillCount");
+    const llmStatus = document.getElementById("llmStatus");
+    const healthPayload = document.getElementById("healthPayload");
+    const responseMeta = document.getElementById("responseMeta");
+    const requestPayload = document.getElementById("requestPayload");
+    const responsePayload = document.getElementById("responsePayload");
+    const toolTraceList = document.getElementById("toolTraceList");
+
+    let chatHistory = [];
+
+    function createChatId() {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return `chat-${window.crypto.randomUUID().slice(0, 8)}`;
+      }
+      return `chat-${Date.now()}`;
+    }
+
+    function createMessageId() {
+      return `msg-${Date.now()}`;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function renderTranscript() {
+      if (!chatHistory.length) {
+        transcript.innerHTML = '<div class="bubble"><small>Empty</small>当前还没有聊天历史，发送第一条消息后会自动累积到 `chat_history`。</div>';
+        return;
+      }
+
+      transcript.innerHTML = chatHistory
+        .map((item) => {
+          const roleClass = item.role === "assistant" ? "assistant" : item.role;
+          return `
+            <div class="bubble ${roleClass}">
+              <small>${escapeHtml(item.role)}</small>
+              <div>${escapeHtml(item.content)}</div>
+            </div>
+          `;
+        })
+        .join("");
+      transcript.scrollTop = transcript.scrollHeight;
+    }
+
+    function renderToolTraces(toolTraces) {
+      if (!toolTraces || !toolTraces.length) {
+        toolTraceList.innerHTML = '<span class="tag">无工具调用</span>';
+        return;
+      }
+
+      toolTraceList.innerHTML = toolTraces
+        .map((trace) => {
+          const statusClass = trace.success ? "ok" : "warn";
+          return `
+            <div class="bubble">
+              <small>${escapeHtml(trace.tool_name)}</small>
+              <div class="${statusClass}">${trace.success ? "成功" : "失败"}</div>
+              <div>${escapeHtml(trace.result_preview || "")}</div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    async function refreshHealth() {
+      healthButton.disabled = true;
+      try {
+        const response = await fetch("/healthz");
+        const payload = await response.json();
+        serviceName.textContent = payload.name || "Loom Agent";
+        healthStatus.textContent = payload.ok ? "在线" : "异常";
+        healthStatus.className = payload.ok ? "ok" : "warn";
+        skillCount.textContent = String(payload.skill_count ?? "-");
+        llmStatus.textContent = payload.llm_available ? "是" : "否";
+        healthPayload.textContent = JSON.stringify(payload, null, 2);
+      } catch (error) {
+        healthStatus.textContent = "请求失败";
+        healthStatus.className = "warn";
+        healthPayload.textContent = JSON.stringify({ error: String(error) }, null, 2);
+      } finally {
+        healthButton.disabled = false;
+      }
+    }
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) {
+        userInput.focus();
+        return;
+      }
+
+      const requestBody = {
+        chat_id: chatIdInput.value.trim() || createChatId(),
+        message_id: createMessageId(),
+        user_input: text,
+        chat_history: chatHistory
+      };
+
+      chatIdInput.value = requestBody.chat_id;
+      sendButton.disabled = true;
+      requestPayload.textContent = JSON.stringify(requestBody, null, 2);
+
+      try {
+        const response = await fetch("/api/v1/agent/respond", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const payload = await response.json();
+        responsePayload.textContent = JSON.stringify(payload, null, 2);
+        responseMeta.innerHTML = `
+          <div>mode: ${escapeHtml(String(payload.mode ?? "-"))}</div>
+          <div>matched_skill: ${escapeHtml(String(payload.matched_skill ?? "-"))}</div>
+          <div>duration_ms: ${escapeHtml(String(payload.duration_ms ?? "-"))}</div>
+          <div>skill_reason: ${escapeHtml(String(payload.skill_reason ?? "-"))}</div>
+        `;
+        renderToolTraces(payload.tool_traces || []);
+
+        if (response.ok) {
+          chatHistory.push({ role: "user", content: text });
+          chatHistory.push({ role: "assistant", content: payload.reply_text || "" });
+          renderTranscript();
+          userInput.value = "";
+        }
+      } catch (error) {
+        responsePayload.textContent = JSON.stringify({ error: String(error) }, null, 2);
+        responseMeta.innerHTML = "<div>请求失败，请检查服务是否已启动。</div>";
+        renderToolTraces([]);
+      } finally {
+        sendButton.disabled = false;
+      }
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      chatIdInput.value = createChatId();
+      userInput.value = "";
+      requestPayload.textContent = "{}";
+      responsePayload.textContent = "{}";
+      responseMeta.innerHTML = `
+        <div>mode: -</div>
+        <div>matched_skill: -</div>
+        <div>duration_ms: -</div>
+      `;
+      renderToolTraces([]);
+      renderTranscript();
+    }
+
+    sendButton.addEventListener("click", sendMessage);
+    healthButton.addEventListener("click", refreshHealth);
+    clearChatButton.addEventListener("click", clearChat);
+    userInput.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    clearChat();
+    refreshHealth();
+  </script>
+</body>
+</html>
