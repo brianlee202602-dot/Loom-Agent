@@ -1,6 +1,8 @@
 .agents/
 .pytest_cache/
 tests/
+.venv/
+
 
 
 **/__pycache__/
