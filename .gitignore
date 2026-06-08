@@ -1,4 +1,3 @@
-.agents/
 .pytest_cache/
 tests/
 .venv/
